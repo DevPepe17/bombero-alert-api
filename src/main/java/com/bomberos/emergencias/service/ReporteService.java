@@ -33,6 +33,7 @@ public class ReporteService {
                 .latitud(dto.getLatitud())
                 .longitud(dto.getLongitud())
                 .descripcion(dto.getDescripcion())
+                .fotoUrl(dto.getFotoUrl())
                 .estado(EstadoReporte.EN_COLA)  // Todo reporte nuevo entra como EN_COLA
                 // fotoUrl e Inteligencia Artificial se añadirán en otra fase
                 .build();
