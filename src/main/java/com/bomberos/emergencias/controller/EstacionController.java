@@ -1,6 +1,4 @@
 package com.bomberos.emergencias.controller;
-
-import com.bomberos.emergencias.entity.Estacion;
 import com.bomberos.emergencias.service.EstacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -12,19 +12,25 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EstacionService {
 
-    private final EstacionRepository estacionRepository;
+        private final EstacionRepository estacionRepository;
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> listarTodas() {
-        return estacionRepository.findAll().stream()
-                .map(e -> Map.<String, Object>of(
-                        "id", e.getId(),
-                        "nombre", e.getNombre(),
-                        "direccion", e.getDireccion(),
-                        "distrito", e.getDistrito(),
-                        "latitud", e.getLatitud(),
-                        "longitud", e.getLongitud()
-                ))
-                .toList();
-    }
+        @Transactional(readOnly = true)
+        public List<Map<String, Object>> listarTodas() {
+                return estacionRepository.findAllWithUnidades().stream()
+                                .map(e -> Map.<String, Object>of(
+                                                "id", e.getId(),
+                                                "nombre", e.getNombre(),
+                                                "direccion", e.getDireccion(),
+                                                "distrito", e.getDistrito(),
+                                                "latitud", e.getLatitud(),
+                                                "longitud", e.getLongitud(),
+                                                "unidades", e.getUnidades().stream()
+                                                                .map(u -> Map.<String, Object>of(
+                                                                                "id", u.getId(),
+                                                                                "codigo", u.getCodigo(),
+                                                                                "tipo", u.getTipo(),
+                                                                                "estado", u.getEstado().name()))
+                                                                .toList()))
+                                .toList();
+        }
 }
