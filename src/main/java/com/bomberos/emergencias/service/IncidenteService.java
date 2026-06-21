@@ -2,7 +2,6 @@ package com.bomberos.emergencias.service;
 
 import com.bomberos.emergencias.dto.response.IncidenteResponseDto;
 import com.bomberos.emergencias.entity.Incidente;
-import com.bomberos.emergencias.entity.enums.EstadoIncidente;
 import com.bomberos.emergencias.repository.IncidenteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
