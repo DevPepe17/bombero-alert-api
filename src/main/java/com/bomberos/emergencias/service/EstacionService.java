@@ -21,6 +21,7 @@ public class EstacionService {
                                                 "id", e.getId(),
                                                 "nombre", e.getNombre(),
                                                 "direccion", e.getDireccion(),
+                                                "telefono", e.getTelefono(),
                                                 "distrito", e.getDistrito(),
                                                 "latitud", e.getLatitud(),
                                                 "longitud", e.getLongitud(),
