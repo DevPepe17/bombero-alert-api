@@ -25,6 +25,7 @@ import com.bomberos.emergencias.repository.AsignacionUnidadRepository;
 import com.bomberos.emergencias.repository.IncidenteRepository;
 import com.bomberos.emergencias.repository.UnidadRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -176,6 +177,23 @@ public class ReporteService {
     }
 
     private ReporteResponseDto mapearADto(Reporte reporte) {
+        List<ReporteResponseDto.UnidadDespachadaDto> unidadesDespachadas = new ArrayList<>();
+
+        if (reporte.getIncidente() != null) {
+            unidadesDespachadas = asignacionUnidadRepository
+                    .findByIncidenteId(reporte.getIncidente().getId())
+                    .stream()
+                    .map(a -> ReporteResponseDto.UnidadDespachadaDto.builder()
+                            .idAsignacion(a.getId())
+                            .idUnidad(a.getUnidad().getId())
+                            .codigo(a.getUnidad().getCodigo())
+                            .tipo(a.getUnidad().getTipo())
+                            .estadoUnidad(a.getUnidad().getEstado().name())
+                            .estadoAsignacion(a.getEstadoAsignacion().name())
+                            .fechaAsignacion(a.getFechaAsignacion())
+                            .build())
+                    .toList();
+        }
         return ReporteResponseDto.builder()
                 .id(reporte.getId())
                 .tipoIncidente(reporte.getTipoIncidente())
@@ -193,6 +211,7 @@ public class ReporteService {
                 .telefonoCiudadano(reporte.getUsuario() != null ? reporte.getUsuario().getTelefono() : "No registrado")
                 .correoCiudadano(reporte.getUsuario() != null ? reporte.getUsuario().getEmail() : "No registrado")
                 .idIncidente(reporte.getIncidente() != null ? reporte.getIncidente().getId() : null)
+                .unidadesDespachadas(unidadesDespachadas)
                 .build();
     }
 
