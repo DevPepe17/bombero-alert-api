@@ -15,6 +15,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.bomberos.emergencias.entity.PasswordResetToken;
+import com.bomberos.emergencias.repository.PasswordResetTokenRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +32,14 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final JavaMailSender mailSender;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
+    @Value("${app.password-reset.expiration-minutes}")
+    private Long resetExpirationMinutes;
 
     @Transactional
     public AuthResponse registrar(AuthRegisterRequest request) {
@@ -61,8 +77,7 @@ public class AuthService {
     public AuthResponse login(AuthLoginRequest request) {
         // Autenticar usuario (valida contra UserDetailsServiceImpl)
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
@@ -79,5 +94,65 @@ public class AuthService {
                 .rol(usuario.getRol().name())
                 .nombreCompleto(usuario.getNombre() + " " + usuario.getApellido())
                 .build();
+    }
+
+    @Transactional
+    public void solicitarRecuperacionPassword(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("No existe una cuenta con ese correo"));
+
+        String token = UUID.randomUUID().toString();
+
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .usuario(usuario)
+                .expiracion(LocalDateTime.now().plusMinutes(resetExpirationMinutes))
+                .usado(false)
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setTo(usuario.getEmail());
+        mensaje.setSubject("Recuperación de contraseña - Emergencias Perú");
+        mensaje.setText(
+                "Hola " + usuario.getNombre() + ",\n\n" +
+                        "Recibimos una solicitud para restablecer tu contraseña.\n\n" +
+                        "Ingresa al siguiente enlace para crear una nueva contraseña:\n" +
+                        resetLink + "\n\n" +
+                        "Este enlace vence en " + resetExpirationMinutes + " minutos.\n\n" +
+                        "Si no solicitaste este cambio, ignora este mensaje.\n\n" +
+                        "Emergencias Perú");
+
+        System.out.println("======================================");
+        System.out.println("ENLACE DE RECUPERACIÓN:");
+        System.out.println(resetLink);
+        System.out.println("======================================");
+
+        // mailSender.send(mensaje);
+    }
+
+    @Transactional
+    public void restablecerPassword(String token, String nuevaPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token inválido"));
+
+        if (resetToken.isUsado()) {
+            throw new RuntimeException("Este enlace ya fue utilizado");
+        }
+
+        if (resetToken.getExpiracion().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("El enlace de recuperación ha expirado");
+        }
+
+        Usuario usuario = resetToken.getUsuario();
+        usuario.setPassword(passwordEncoder.encode(nuevaPassword));
+
+        resetToken.setUsado(true);
+
+        usuarioRepository.save(usuario);
+        passwordResetTokenRepository.save(resetToken);
     }
 }
