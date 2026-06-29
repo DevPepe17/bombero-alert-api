@@ -126,12 +126,7 @@ public class AuthService {
                         "Si no solicitaste este cambio, ignora este mensaje.\n\n" +
                         "Emergencias Perú");
 
-        System.out.println("======================================");
-        System.out.println("ENLACE DE RECUPERACIÓN:");
-        System.out.println(resetLink);
-        System.out.println("======================================");
-
-        // mailSender.send(mensaje);
+        mailSender.send(mensaje);
     }
 
     @Transactional
