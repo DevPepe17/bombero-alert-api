@@ -40,4 +40,9 @@ public class AuthController {
         authService.restablecerPassword(token, nuevaPassword);
         return ResponseEntity.ok("Contraseña actualizada correctamente.");
     }
+
+    @GetMapping("/validate-reset-token")
+    public ResponseEntity<Boolean> validarTokenRecuperacion(@RequestParam String token) {
+        return ResponseEntity.ok(authService.validarTokenRecuperacion(token));
+    }
 }

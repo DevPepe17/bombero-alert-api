@@ -150,4 +150,12 @@ public class AuthService {
         usuarioRepository.save(usuario);
         passwordResetTokenRepository.save(resetToken);
     }
+
+    @Transactional(readOnly = true)
+    public boolean validarTokenRecuperacion(String token) {
+        return passwordResetTokenRepository.findByToken(token)
+                .map(resetToken -> !resetToken.isUsado()
+                        && resetToken.getExpiracion().isAfter(LocalDateTime.now()))
+                .orElse(false);
+    }
 }
