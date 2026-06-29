@@ -24,6 +24,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.bomberos.emergencias.entity.EmailVerificationToken;
+import com.bomberos.emergencias.repository.EmailVerificationTokenRepository;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -33,6 +36,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final JavaMailSender mailSender;
 
     @Value("${app.frontend.url}")
@@ -60,14 +64,14 @@ public class AuthService {
                 .telefono(request.getTelefono())
                 .rol(Rol.CIUDADANO)
                 .estado(EstadoUsuario.ACTIVO)
+                .emailVerificado(false)
                 .build();
 
         usuarioRepository.save(nuevoUsuario);
-
-        String jwtToken = jwtUtil.generarToken(nuevoUsuario);
+        enviarCorreoVerificacion(nuevoUsuario);
 
         return AuthResponse.builder()
-                .token(jwtToken)
+                .token(null)
                 .email(nuevoUsuario.getEmail())
                 .rol(nuevoUsuario.getRol().name())
                 .nombreCompleto(nuevoUsuario.getNombre() + " " + nuevoUsuario.getApellido())
@@ -84,6 +88,9 @@ public class AuthService {
 
         if (usuario.getEstado() == EstadoUsuario.BANEADO) {
             throw new IllegalStateException("El usuario está baneado del sistema");
+        }
+        if (usuario.getRol() == Rol.CIUDADANO && Boolean.FALSE.equals(usuario.getEmailVerificado())) {
+            throw new IllegalStateException("Debes verificar tu correo antes de iniciar sesión.");
         }
 
         String jwtToken = jwtUtil.generarToken(usuario);
@@ -157,5 +164,60 @@ public class AuthService {
                 .map(resetToken -> !resetToken.isUsado()
                         && resetToken.getExpiracion().isAfter(LocalDateTime.now()))
                 .orElse(false);
+    }
+
+    @Transactional
+    public void enviarCorreoVerificacion(Usuario usuario) {
+        String token = UUID.randomUUID().toString();
+
+        EmailVerificationToken verificationToken = EmailVerificationToken.builder()
+                .token(token)
+                .usuario(usuario)
+                .expiracion(LocalDateTime.now().plusMinutes(5))
+                .usado(false)
+                .build();
+
+        emailVerificationTokenRepository.save(verificationToken);
+
+        String verificationLink = frontendUrl + "/verify-email?token=" + token;
+
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setTo(usuario.getEmail());
+        mensaje.setSubject("Verifica tu cuenta - Emergencias Perú");
+        mensaje.setText(
+                "Hola " + usuario.getNombre() + ",\n\n" +
+                        "Gracias por registrarte en Emergencias Perú.\n\n" +
+                        "Para activar tu cuenta, ingresa al siguiente enlace:\n" +
+                        verificationLink + "\n\n" +
+                        "Este enlace vence en 5 minutos.\n\n" +
+                        "Si no creaste esta cuenta, ignora este mensaje.\n\n" +
+                        "Emergencias Perú");
+
+        mailSender.send(mensaje);
+    }
+
+    @Transactional
+    public void verificarEmail(String token) {
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token de verificación inválido"));
+
+        if (verificationToken.isUsado()) {
+            if (Boolean.TRUE.equals(verificationToken.getUsuario().getEmailVerificado())) {
+                return;
+            }
+            throw new RuntimeException("Este enlace ya fue utilizado");
+        }
+
+        if (verificationToken.getExpiracion().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("El enlace de verificación ha expirado");
+        }
+
+        Usuario usuario = verificationToken.getUsuario();
+        usuario.setEmailVerificado(true);
+
+        verificationToken.setUsado(true);
+
+        usuarioRepository.save(usuario);
+        emailVerificationTokenRepository.save(verificationToken);
     }
 }

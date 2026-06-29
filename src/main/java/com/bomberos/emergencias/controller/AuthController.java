@@ -45,4 +45,10 @@ public class AuthController {
     public ResponseEntity<Boolean> validarTokenRecuperacion(@RequestParam String token) {
         return ResponseEntity.ok(authService.validarTokenRecuperacion(token));
     }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verificarEmail(@RequestParam String token) {
+    authService.verificarEmail(token);
+    return ResponseEntity.ok("Cuenta verificada correctamente.");
+}
 }

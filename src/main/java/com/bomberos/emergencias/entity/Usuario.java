@@ -83,6 +83,10 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 30)
     private EstadoUsuario estado = EstadoUsuario.ACTIVO;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean emailVerificado = true;
+
     @Enumerated(EnumType.STRING)
     @Builder.Default
     @Column(nullable = false, length = 20)
