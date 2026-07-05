@@ -46,4 +46,6 @@ public interface EstacionRepository extends JpaRepository<Estacion, Long> {
         @Param("longitud") Double longitud,
         org.springframework.data.domain.Pageable limite
     );
+    @Query("SELECT DISTINCT e FROM Estacion e LEFT JOIN FETCH e.unidades")
+    List<Estacion> findAllWithUnidades();
 }

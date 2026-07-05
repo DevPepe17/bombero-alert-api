@@ -26,4 +26,29 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthLoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> solicitarRecuperacion(@RequestParam String email) {
+        authService.solicitarRecuperacionPassword(email);
+        return ResponseEntity.ok("Se envió un enlace de recuperación al correo indicado.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> restablecerPassword(
+            @RequestParam String token,
+            @RequestParam String nuevaPassword) {
+        authService.restablecerPassword(token, nuevaPassword);
+        return ResponseEntity.ok("Contraseña actualizada correctamente.");
+    }
+
+    @GetMapping("/validate-reset-token")
+    public ResponseEntity<Boolean> validarTokenRecuperacion(@RequestParam String token) {
+        return ResponseEntity.ok(authService.validarTokenRecuperacion(token));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verificarEmail(@RequestParam String token) {
+    authService.verificarEmail(token);
+    return ResponseEntity.ok("Cuenta verificada correctamente.");
+}
 }

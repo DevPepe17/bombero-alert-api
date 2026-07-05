@@ -32,5 +32,7 @@ public class ReporteRequestDto {
 
     private String descripcion;
     
+    private String fotoUrl;
+    
     // El campo de la foto (fotoUrl) lo gestionaremos en la siguiente fase
 }
